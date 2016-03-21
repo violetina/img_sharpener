@@ -17,6 +17,7 @@ def validate_message(params):
         'destination_server',
         'destination_path',
         'destination_file',
+        'level',
 
     ]
 
@@ -63,7 +64,8 @@ class Consumer:
                 try:
                     source_file_path = join(convert_params['source_path'], convert_params['source_file'])
                     dest_file_path = join(convert_params['destination_path'], convert_params['destination_file'])
-                    convert(source_file_path, dest_file_path)
+                    level = join(convert_params['level'], convert_params['level'])
+                    convert(source_file_path,level,dest_file_path)
                 except Exception as e:
                     status = 'NOK'
                     if type(e).__name__ == 'CalledProcessError':
@@ -78,6 +80,7 @@ class Consumer:
                     "destination_server": convert_params["destination_server"],
                     "destination_path": convert_params["destination_path"],
                     "destination_file": convert_params["destination_file"],
+                    "level": convert_params["level"],
                     "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
 
