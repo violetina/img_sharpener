@@ -2,8 +2,8 @@ from subprocess import check_output, STDOUT
 
 
 
-def convert(source_file, destination_file ):
+def convert(source_file, destination_file, amount ):
     output = check_output(["convert",
                            source_file,
-                           "-sharpen","0x1",
+                           "-sharpen", amount,
                            destination_file], stderr=STDOUT)
