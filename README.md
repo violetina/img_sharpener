@@ -1,16 +1,12 @@
-# jp2_creator
+# /usr/bin/sharpener
 
 This is a worker that will listen to a queue from RabbitMQ, converts the images specified in the message and post a message to the given exchange about the result.
 
 # Installation
 
-Make sure kakadu is installed and available in the /usr/local/lib and /usr/local/bin directories. You can install it this way following the steps below:
 
 ```
-    1. Unzip kakadu to a location of choice
-    2. make -f {location}/make/{make_file_for_your_env}
-    3. sudo mv {location}/lib/{folder_for_your_env}/libkdu_v75R.so /usr/local/lib/libkdu_v75R.so
-    4. sudo mv -v {location}/bin/{folder_for_your_env}/* /usr/local/bin/
+    1. have imagemagic installed
 ```
 
 Simply check out this repository and run:
@@ -24,7 +20,7 @@ Simply check out this repository and run:
 You can run the worker by executing the following command:
 
 ```
-    jp2worker [-h] [--broker_ip BROKER_IP]
+     [-h] [--broker_ip BROKER_IP]
                   [--incoming_queue INCOMING_QUEUE]
                   [--result_exchange RESULT_EXCHANGE]
                   [--result_routing RESULT_ROUTING] [--username USERNAME]
@@ -35,7 +31,7 @@ You can run the worker by executing the following command:
 Information about every parameter can be consulted with:
 
 ```
-    jp2worker -h
+    sharpener -h
 ```
 
 The worker can be configured with a jp2worker.conf file that has be located in /etc/viaa-workers. If it doesn't exists the command line arguments will be used. You can use command line arguments to overrule property values.
