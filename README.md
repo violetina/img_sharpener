@@ -51,4 +51,3 @@ PASSWORD=guest                          #The password to access the RabbitMQ bro
 
 # Documentation
 
-Any further documentation can be found on the [VIAA Confluence page](https://viaadocumentation.atlassian.net/wiki/display/SI/JP2+creator)
