@@ -1,3 +1,0 @@
-[console_scripts]
-sharpener = sharpener.command_line:main
-
