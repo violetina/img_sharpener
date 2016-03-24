@@ -6,7 +6,16 @@ This is a worker that will listen to a queue from RabbitMQ, converts the images 
 
 
 ```
-    1. have imagemagic installed
+    1. Have imagemagic installed
+    2. if you want sshfs mounts eg. use destination_server or source_sever make sure to have the ssh keys installed with ssh-copy-id
+    3. To make sshfs wpork faster  edit ~/.ssh/config and add
+
+       ```
+          ControlMaster auto
+          ControlPath /tmp/ssh_mux_%h_%p_%r
+
+       ```
+   
 ```
 
 Simply check out this repository and run:
@@ -16,6 +25,8 @@ Simply check out this repository and run:
 ```
 
 # Usage
+
+
 
 You can run the worker by executing the following command:
 
@@ -48,6 +59,21 @@ TOPIC_TYPE=direct                       #The name of the topic type for the resu
 USERNAME=guest                          #The username to access the RabbitMQ broker
 PASSWORD=guest                          #The password to access the RabbitMQ broker
 ```
+#TODO
+optional add a user to mount the dirs (defaults to tcochet) so make sure the user tcochet has read permissions on source and write on destination
+
 
 # Documentation
-
+example message:
+```
+{
+    "correlation_id":"test_tina002",
+    "source_server":"do-tst-app-01.do.viaa.be",
+    "source_path":"/home/tcochet",
+    "source_file":"test/tiff/test2_sharp.tif",
+    "destination_server":"do-mgm-mgm-01.do.viaa.be",
+    "destination_path":"/home/tcochet/test/",
+    "destination_file":"m0000.tif",
+    "level":"0x.1"
+}
+```
