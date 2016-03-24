@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(name='viaa-sharpener',
       version='0.1',
-      description='VIAA tiff to jp2 convertor.',
-      long_description='Tiff to jp2 convertor based on RabbitMQ messages.',
+      description='VIAA image sharpener.',
+      long_description='use imagemagick to sharpen image.',
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

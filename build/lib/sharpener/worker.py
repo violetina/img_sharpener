@@ -1,11 +1,15 @@
 import datetime
 import pika
 import logging
-
+import os
 from pika.credentials import PlainCredentials
 from .rabbit_publisher import send_message
 from json import loads, dumps
 from .convertor import convert
+import subprocess
+# from subprocess import check_output, STDOUT
+
+
 from os.path import join
 
 
@@ -42,6 +46,9 @@ class Consumer:
         self.result_routing = arguments.result_routing
         self.result_queue = arguments.result_queue
         self.topic_type = arguments.topic_type
+        self.file_permission = 0o770
+        self.user = ''
+        self.group = ''
 
     def consume(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(
@@ -62,10 +69,73 @@ class Consumer:
             convert_params = loads(body.decode("utf-8"))
             if validate_message(convert_params):
                 try:
+                    user = 'tcochet'
                     source_file_path = join(convert_params['source_path'], convert_params['source_file'])
                     dest_file_path = join(convert_params['destination_path'], convert_params['destination_file'])
-                    level = join(convert_params['level'], convert_params['level'])
-                    convert(source_file_path,level,dest_file_path)
+                    level = convert_params['level']
+                    temp_dir_dest = '/mnt/dest'
+                    temp_dir = '/mnt/source'
+                    self.supermakedirs(temp_dir_dest)
+                    self.supermakedirs(temp_dir)
+                    if convert_params['destination_server']:
+                        fs_dest = convert_params['destination_path']
+                        host_dest = convert_params['destination_server']
+
+                        path_dest = os.path.dirname(temp_dir_dest)
+                        self.supermakedirs(path_dest)
+                        if not os.path.ismount(path_dest):
+                            logging.info("starting mount of destination server %s" % host_dest)
+                            subprocess.call(["sshfs -o default_permissions -o nonempty -o allow_other  %s@%s:%s %s" % (
+                                user, host_dest, fs_dest, temp_dir_dest)], shell=True)
+                            dest_file_path_dest = join(temp_dir_dest, convert_params['destination_file'])
+                            dest_file_path = dest_file_path_dest
+                            mounted_filepath = join(temp_dir_dest, convert_params['destination_file'])
+                            mounted_path_dest = os.path.dirname(mounted_filepath)
+                            logging.info("destfilepath %s" % dest_file_path_dest)
+                            logging.info("destination dir wil be made if not exists: %s" % mounted_path_dest)
+                            self.supermakedirs(mounted_path_dest)
+
+                        else:
+                            logging.info('already mounted')
+
+                    if convert_params['source_server']:
+                        fs = convert_params['source_path']
+                        host = convert_params['source_server']
+                        path = os.path.dirname(temp_dir)
+                        self.supermakedirs(path)
+                        if not os.path.ismount(path):
+                            logging.info("starting mount of source server %s" % host)
+                            subprocess.call(["sshfs -o default_permissions -o nonempty -o allow_other  %s@%s:%s %s" % (
+                                user, host, fs, temp_dir)], shell=True)
+                            source_file_path = join(temp_dir, convert_params['source_file'])
+                            mounted_file_path_source = join(temp_dir, convert_params['source_file'])
+                            mounted_path_source = os.path.dirname(mounted_file_path_source)
+                            logging.info("sourcefilepath %s" % source_file_path)
+                            logging.info("source dir wil be made if not exists: %s" % mounted_path_source)
+                            self.supermakedirs(mounted_path_source)
+                        else:
+                            logging.info('already mounted')
+
+                    else:
+                        logging.info('no source_server defiend ignoring')
+                        path = os.path.dirname(convert_params['destination_path'])
+                        self.supermakedirs(path)
+                        if os.path.exists(convert_params['destination_path']) and os.path.isfile(
+                            convert_params['destination_path']):
+                            os.remove(convert_params['destination_path'])
+
+                    convert(source_file_path, level, dest_file_path)
+                    if os.path.ismount(temp_dir):
+                        logging.info("unmounting %s" % temp_dir)
+                        subprocess.call(["fusermount -u %s" % (temp_dir)], shell=True)
+                    if os.path.ismount(temp_dir_dest):
+                        logging.info("unmounting %s" % temp_dir_dest)
+                        subprocess.call(["fusermount -u %s" % (temp_dir_dest)], shell=True)
+
+                except Exception as e:
+                    status = 'NOK'
+                    details = str(e)
+
                 except Exception as e:
                     status = 'NOK'
                     if type(e).__name__ == 'CalledProcessError':
@@ -104,3 +174,29 @@ class Consumer:
             ch.basic_ack(delivery_tag=method.delivery_tag)
         except Exception as e:
             logging.error(str(e))
+
+    def supermakedirs(self, path):
+        try:
+            if not path or os.path.exists(path):
+                stat_info = os.stat(path)
+                uid = stat_info.st_uid
+                gid = stat_info.st_gid
+                self.user = uid
+                self.group = gid
+                logging.debug('Found: {} - {} - {}'.format(self.user, self.group, path))
+                # Break recursion
+                return []
+            (head, tail) = os.path.split(path)
+            res = self.supermakedirs(head)
+            os.mkdir(path)
+            os.chmod(path, self.file_permission)
+            os.chown(path, self.user, self.group)
+            logging.debug('Created: {} - {} - {}'.format(self.user, self.group, path))
+            res += [path]
+            return res
+        except OSError as e:
+            if e.errno == 17:
+                logging.debug('Directory existed when creating. Ignoring')
+                res += [path]
+                return res
+            raise

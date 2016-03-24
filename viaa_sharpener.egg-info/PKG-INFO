@@ -1,12 +1,12 @@
 Metadata-Version: 1.1
 Name: viaa-sharpener
 Version: 0.1
-Summary: VIAA tiff to jp2 convertor.
+Summary: VIAA image sharpener.
 Home-page: UNKNOWN
 Author: Tina Cochet
 Author-email: tina.cochet@viaa.be
 License: © 2015 VIAA
-Description: Tiff to jp2 convertor based on RabbitMQ messages.
+Description: use imagemagick to sharpen image.
 Keywords: convert sharpen image
 Platform: UNKNOWN
 Classifier: Development Status :: 3 - Alpha

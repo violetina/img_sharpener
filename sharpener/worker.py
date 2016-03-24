@@ -84,31 +84,35 @@ class Consumer:
                         path_dest = os.path.dirname(temp_dir_dest)
                         self.supermakedirs(path_dest)
                         if not os.path.ismount(path_dest):
-                            logging.info("starting mount of source server %s" % host_dest)
-                            subprocess.call(["sshfs -o default_permissions -o nonempty -o allow_other  %s@%s:%s %s" % (user, host_dest, fs_dest, temp_dir_dest)], shell=True)
+                            logging.info("starting mount of destination server %s" % host_dest)
+                            subprocess.call(["sshfs -o default_permissions -o nonempty -o allow_other  %s@%s:%s %s" % (
+                                user, host_dest, fs_dest, temp_dir_dest)], shell=True)
                             dest_file_path_dest = join(temp_dir_dest, convert_params['destination_file'])
                             dest_file_path = dest_file_path_dest
-                            mounted_path_dest = join(temp_dir_dest, convert_params['destination_path'])
+                            mounted_filepath = join(temp_dir_dest, convert_params['destination_file'])
+                            mounted_path_dest = os.path.dirname(mounted_filepath)
                             logging.info("destfilepath %s" % dest_file_path_dest)
+                            logging.info("destination dir wil be made if not exists: %s" % mounted_path_dest)
                             self.supermakedirs(mounted_path_dest)
 
                         else:
                             logging.info('already mounted')
 
                     if convert_params['source_server']:
-
                         fs = convert_params['source_path']
                         host = convert_params['source_server']
-
                         path = os.path.dirname(temp_dir)
                         self.supermakedirs(path)
                         if not os.path.ismount(path):
                             logging.info("starting mount of source server %s" % host)
-                            subprocess.call(["sshfs -o default_permissions -o nonempty -o allow_other  %s@%s:%s %s" % (user, host, fs, temp_dir)], shell=True)
+                            subprocess.call(["sshfs -o default_permissions -o nonempty -o allow_other  %s@%s:%s %s" % (
+                                user, host, fs, temp_dir)], shell=True)
                             source_file_path = join(temp_dir, convert_params['source_file'])
-                            mounted_path = join(temp_dir, convert_params['source_path'])
+                            mounted_file_path_source = join(temp_dir, convert_params['source_file'])
+                            mounted_path_source = os.path.dirname(mounted_file_path_source)
                             logging.info("sourcefilepath %s" % source_file_path)
-                            self.supermakedirs(mounted_path)
+                            logging.info("source dir wil be made if not exists: %s" % mounted_path_source)
+                            self.supermakedirs(mounted_path_source)
                         else:
                             logging.info('already mounted')
 
@@ -121,8 +125,12 @@ class Consumer:
                             os.remove(convert_params['destination_path'])
 
                     convert(source_file_path, level, dest_file_path)
-                    subprocess.call(["fusermount -u %s" % (temp_dir)], shell=True)
-                    subprocess.call(["fusermount -u %s" % (temp_dir_dest)], shell=True)
+                    if os.path.ismount(temp_dir):
+                        logging.info("unmounting %s" % temp_dir)
+                        subprocess.call(["fusermount -u %s" % (temp_dir)], shell=True)
+                    if os.path.ismount(temp_dir_dest):
+                        logging.info("unmounting %s" % temp_dir_dest)
+                        subprocess.call(["fusermount -u %s" % (temp_dir_dest)], shell=True)
 
                 except Exception as e:
                     status = 'NOK'
