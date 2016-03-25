@@ -3,6 +3,8 @@ import pika
 import logging
 import os
 from pika.credentials import PlainCredentials
+from pip import logger
+
 from .rabbit_publisher import send_message
 from json import loads, dumps
 from .convertor import convert
@@ -11,7 +13,7 @@ import subprocess
 
 
 from os.path import join
-
+import logging
 
 def validate_message(params):
     mandatory_keys = [
@@ -22,17 +24,23 @@ def validate_message(params):
         'destination_path',
         'destination_file',
         'level',
+        'source_user',
+        'destination_user'
 
     ]
 
     message_valid = True
 
     for key in mandatory_keys:
-        if key not in params:
+        #try:
+          if key not in params:
             message_valid = False
             logging.error('{} is missing from received message'.format(key))
+        #except BaseException as e:
+        #    logger.exception('ERROR: source_user is missing from received message' + str(e))
 
     return message_valid
+
 
 
 class Consumer:
@@ -49,6 +57,7 @@ class Consumer:
         self.file_permission = 0o770
         self.user = ''
         self.group = ''
+
 
     def consume(self):
         connection = pika.BlockingConnection(pika.ConnectionParameters(
@@ -69,7 +78,13 @@ class Consumer:
             convert_params = loads(body.decode("utf-8"))
             if validate_message(convert_params):
                 try:
-                    user = 'tcochet'
+                    destination_user = convert_params['destination_user']
+                    if not destination_user:
+                        destination_user = 'tcochet'
+                    source_user = convert_params['source_user']
+                    if not source_user:
+                        source_user = 'tcochet'
+
                     source_file_path = join(convert_params['source_path'], convert_params['source_file'])
                     dest_file_path = join(convert_params['destination_path'], convert_params['destination_file'])
                     level = convert_params['level']
@@ -86,7 +101,7 @@ class Consumer:
                         if not os.path.ismount(path_dest):
                             logging.info("starting mount of destination server %s" % host_dest)
                             subprocess.call(["sshfs -o default_permissions -o nonempty -o allow_other  %s@%s:%s %s" % (
-                                user, host_dest, fs_dest, temp_dir_dest)], shell=True)
+                                destination_user, host_dest, fs_dest, temp_dir_dest)], shell=True)
                             dest_file_path_dest = join(temp_dir_dest, convert_params['destination_file'])
                             dest_file_path = dest_file_path_dest
                             mounted_filepath = join(temp_dir_dest, convert_params['destination_file'])
@@ -106,7 +121,7 @@ class Consumer:
                         if not os.path.ismount(path):
                             logging.info("starting mount of source server %s" % host)
                             subprocess.call(["sshfs -o default_permissions -o nonempty -o allow_other  %s@%s:%s %s" % (
-                                user, host, fs, temp_dir)], shell=True)
+                                source_user, host, fs, temp_dir)], shell=True)
                             source_file_path = join(temp_dir, convert_params['source_file'])
                             mounted_file_path_source = join(temp_dir, convert_params['source_file'])
                             mounted_path_source = os.path.dirname(mounted_file_path_source)
